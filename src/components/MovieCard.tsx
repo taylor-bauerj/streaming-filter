@@ -41,6 +41,21 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         return rating ? rating.toFixed(1) : 'N/A';
     };
 
+    const getRatingColor = (certification?: string): string => {
+        switch (certification) {
+            case 'G':
+                return 'bg-green-500';
+            case 'PG':
+                return 'bg-blue-500';
+            case 'PG-13':
+                return 'bg-yellow-500';
+            case 'R':
+                return 'bg-red-500';
+            default:
+                return 'bg-gray-500';
+        }
+    };
+
     return (
         <>
             <div
@@ -58,6 +73,11 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
                     {/* Rating badge */}
                     <div className="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded-full text-sm font-bold">
                         ⭐ {formatRating(movie.vote_average)}
+                    </div>
+
+                    {/*Maturity Rating*/}
+                    <div className={`absolute top-2 left-2 ${getRatingColor(movie.certification)} text-white px-2 py-1 rounded text-xs font-bold`}>
+                        {movie.certification}
                     </div>
                 </div>
 

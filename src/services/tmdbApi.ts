@@ -13,6 +13,7 @@ export interface Movie {
     original_title: string;
     popularity: number;
     video: boolean;
+    certification?: string;
 }
 
 export interface MovieDetails extends Movie {
@@ -28,6 +29,24 @@ export interface MovieDetails extends Movie {
     credits?: Credits;
     videos?: Videos;
     'watch/providers'?: WatchProviders;
+    release_dates?: ReleaseDates;
+}
+
+export interface ReleaseDates {
+    results: ReleaseDateResult[];
+}
+
+export interface ReleaseDateResult {
+    iso_3166_1: string;
+    release_dates: ReleaseDate[];
+}
+
+export interface ReleaseDate {
+    certification: string;
+    iso_639_1: string;
+    release_date: string;
+    type: number;
+    note: string;
 }
 
 export interface Genre {
@@ -105,6 +124,34 @@ export interface Provider {
     display_priority: number;
 }
 
+export interface MovieWithProviders extends Movie {
+    certification?: string;
+    streamingProviders?: Provider[];
+    rentProviders?: Provider[];
+    buyProviders?: Provider[];
+    hasStreaming?: boolean;
+}
+
+export interface StreamingProvider {
+    id: number;
+    name: string;
+    logo_path?: string;
+}
+
+export interface DiscoverParams {
+    page?: number;
+    sort_by?: string;
+    'vote_average.gte'?: number;
+    'vote_count.gte'?: number;
+    with_watch_providers?: string;
+    watch_region?: string;
+    with_genres?: string;
+    'primary_release_date.gte'?: string;
+    'primary_release_date.lte'?: string;
+    with_watch_monetization_types?: string;
+    [key: string]: string | number | boolean | undefined;
+}
+
 export interface TMDBResponse<T> {
     page: number;
     results: T[];
@@ -150,8 +197,78 @@ class TMDBApi {
 
     async getMovieDetails(movieId: number): Promise<MovieDetails> {
         return this.makeRequest<MovieDetails>(`/movie/${movieId}`, {
-            append_to_response: 'watch/providers,credits,videos',
+            append_to_response: 'watch/providers,credits,videos,release_dates',
         });
+    }
+
+    async getMoviesWithProviders(params: DiscoverParams = {}): Promise<TMDBResponse<Movie>> {
+        const defaultParams: DiscoverParams = {
+            page: 1,
+            sort_by: 'popularity.desc',
+            watch_region: 'US',
+            ...params
+        };
+
+        return this.makeRequest<TMDBResponse<Movie>>('/discover/movie', defaultParams);
+    }
+
+    async getWatchProviders(region: string = 'US'): Promise<{ results: StreamingProvider[] }> {
+        return this.makeRequest<{ results: StreamingProvider[] }>('/watch/providers/movie', {
+            watch_region: region
+        });
+    }
+
+    async getMoviesWithProviderDetails(
+        providerIds?: number[],
+        monetizationType: 'flatrate' | 'rent' | 'buy' = 'flatrate',
+        page: number = 1
+    ): Promise<TMDBResponse<MovieWithProviders>> {
+        const params: DiscoverParams = {
+            page,
+            sort_by: 'popularity.desc',
+            watch_region: 'US',
+            with_watch_monetization_types: monetizationType
+        };
+
+        if (providerIds && providerIds.length > 0) {
+            params.with_watch_providers = providerIds.join('|');
+        }
+
+        const response = await this.makeRequest<TMDBResponse<Movie>>('/discover/movie', params);
+
+        const enhancedMovies: MovieWithProviders[] = await Promise.all(
+            response.results.slice(0, 20).map(async movie => {
+                try {
+                    const details = await this.getMovieDetails(movie.id);
+                    const certification = this.getUSCertification(details);
+                    const providers = this.extractProviders(details);
+
+                    return {
+                        ...movie,
+                        certification,
+                        streamingProviders: providers.streaming,
+                        rentProviders: providers.rent,
+                        buyProviders: providers.buy,
+                        hasStreaming: providers.streaming.length > 0
+                    }
+                } catch (error) {
+                    console.error(`Error fetching movie details for movie ${movie.id}: `, error);
+                    return {
+                        ...movie,
+                        certification: 'Not Rated',
+                        streamingProviders: [],
+                        rentProviders: [],
+                        buyProviders: [],
+                        hasStreaming: false
+                    }
+                }
+            })
+        );
+
+        return {
+            ...response,
+            results: enhancedMovies
+        }
     }
 
     getImageUrl(path: string | null, size: string ='w500'): string | null {
@@ -164,6 +281,54 @@ class TMDBApi {
         if (!path) return null;
 
         return `${IMAGE_BASE_URL}${size}${path}`;
+    }
+
+    getUSCertification(movieDetails: MovieDetails): string {
+        if (!movieDetails.release_dates?.results) return 'Not Rated';
+
+        const usRelease = movieDetails.release_dates.results.find(result => result.iso_3166_1 === 'US');
+
+        if (!usRelease?.release_dates?.length) return 'Not Rated';
+
+        const theatricalRelease = usRelease.release_dates.find(
+            release => release.type === 3 || release.type === 2
+        );
+
+        return theatricalRelease?.certification || usRelease.release_dates[0].certification || 'Not Rated';
+    }
+
+    getPopularStreamingProviders(): StreamingProvider[] {
+        return [
+            { id: 8, name: 'Netflix' },
+            { id: 9, name: 'Amazon Prime Video' },
+            { id: 15, name: 'Hulu' },
+            { id: 337, name: 'Disney Plus' },
+            { id: 384, name: 'HBO Max' },
+            { id: 350, name: 'Apple TV Plus' },
+            { id: 387, name: 'Peacock' },
+            { id: 531, name: 'Paramount Plus' },
+            { id: 546, name: 'Showtime' },
+            { id: 279, name: 'Crunchyroll' },
+            { id: 257, name: 'Funimation' },
+            { id: 192, name: 'YouTube' },
+            { id: 10, name: 'Amazon Video' },
+            { id: 2, name: 'Apple iTunes' },
+            { id: 3, name: 'Google Play Movies' }
+        ];
+    }
+
+    private extractProviders(movieDetails: MovieDetails): {
+        streaming: Provider[];
+        rent: Provider[];
+        buy: Provider[];
+    } {
+        const usProviders = movieDetails['watch/providers']?.results?.US;
+
+        return {
+            streaming: usProviders?.flatrate || [],
+            rent: usProviders?.rent || [],
+            buy: usProviders?.buy || []
+        }
     }
 }
 
