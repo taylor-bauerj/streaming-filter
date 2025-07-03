@@ -123,6 +123,18 @@ const MovieGrid = () => {
                 };
             }
 
+            switch (availabilityType) {
+                case 'streaming':
+                    response.results = response.results.filter(m => m.hasStreaming);
+                    break;
+                case 'rent':
+                    response.results = response.results.filter(m => m.rentProviders && m.rentProviders.length > 0);
+                    break;
+                case 'buy':
+                    response.results = response.results.filter(m => m.buyProviders && m.buyProviders.length > 0);
+                    break;
+            }
+
             setMovies(response.results);
         } catch (error) {
             console.error('Error fetching movies: ', error);
@@ -234,6 +246,7 @@ const MovieGrid = () => {
                 </h1>
 
                 <MovieFilters
+                    filters={filters}
                     onFiltersChange={handleFiltersChange}
                     availableYears={availableYears}
                     availableRatings={availableRatings}

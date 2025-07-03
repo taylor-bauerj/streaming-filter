@@ -11,6 +11,7 @@ export interface FilterOptions {
 }
 
 interface MovieFiltersProps {
+    filters: FilterOptions;
     onFiltersChange: (filters: FilterOptions) => void;
     availableYears: number[];
     availableRatings: string[];
@@ -19,25 +20,17 @@ interface MovieFiltersProps {
 }
 
 const MovieFilters: React.FC<MovieFiltersProps> = ({
+    filters,
     onFiltersChange,
     availableYears,
     availableRatings,
     streamingProviders,
     onProviderFilterChange
 }) => {
-    const [filters, setFilters] = useState<FilterOptions>({
-        title: '',
-        releaseYear: '',
-        maturityRating: '',
-        streamingServices: [],
-        availabilityType: 'all'
-    });
-
     const [showAllProviders, setShowAllProviders] = useState<boolean>(false);
 
-    const handleFilterChange = (key: keyof FilterOptions, value: string | number []) => {
-        const newFilters = { ...filters, [key]: value };
-        setFilters(newFilters);
+    const handleFilterChange = (key: keyof FilterOptions, value: FilterOptions[keyof FilterOptions]) => {
+        const newFilters = { ...filters, [key]: value } as FilterOptions;
         onFiltersChange(newFilters);
 
         if (key === 'streamingServices' || key === 'availabilityType') {
@@ -61,7 +54,6 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
             streamingServices: [],
             availabilityType: 'all'
         };
-        setFilters(clearedFilters);
         onFiltersChange(clearedFilters);
         onProviderFilterChange?.([], 'all');
     };
@@ -158,23 +150,23 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
 
                 {/*Availability Type Filter*/}
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="text-left block text-sm font-medium text-gray-300 mb-2">
                         Availability Type
                     </label>
                     <div className="flex flex-wrap gap-2">
                         {[
-                            { value: 'all', label: 'All', color: 'bg-gray-600' },
-                            { value: 'streaming', label: 'Streaming', color: 'bg-green-600' },
-                            { value: 'rent', label: 'Rent', color: 'bg-blue-600' },
-                            { value: 'buy', label: 'Buy', color: 'bg-purple-600' }
+                            { value: 'all', label: 'All' },
+                            { value: 'streaming', label: 'Streaming' },
+                            { value: 'rent', label: 'Rent' },
+                            { value: 'buy', label: 'Buy' }
                         ].map((type) => (
                             <button
                                 key={type.value}
                                 onClick={() => handleFilterChange('availabilityType', type.value)}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                                     filters.availabilityType === type.value
-                                        ? `${type.color} text-white`
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        ? 'text-white !bg-gray-800 border border-gray-700'
+                                        : '!bg-blue-500 !bg-opacity-20 text-gray-300 hover:!bg-gray-600 border border-gray-600'
                                 }`}
                             >
                                 {type.label}
