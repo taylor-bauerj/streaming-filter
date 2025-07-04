@@ -1,213 +1,31 @@
-import tmdbApi, {
-    type MovieWithProviders,
-    type StreamingProvider,
-    type TMDBResponse
-} from "../services/tmdbApi.ts";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import { useEffect } from "react";
 import MovieCard from "./MovieCard.tsx";
-import MovieFilters, {type FilterOptions} from "./MovieFilters.tsx";
+import MovieFilters from "./MovieFilters.tsx";
+import { useAppStore } from "../store/useAppStore.ts";
+import {useFiltersStore} from "../store/useFiltersStore.ts";
 
 const MovieGrid = () => {
-    const [movies, setMovies] = useState<MovieWithProviders[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
-    const [streamingProviders, setStreamingProviders] = useState<StreamingProvider[]>([]);
+    // app state
+    const movies = useAppStore((state) => state.movies);
+    const loading = useAppStore((state) => state.loading);
+    const error = useAppStore((state) => state.error);
+    const loadingDetails = useAppStore((state) => state.loadingDetails);
+    const streamingProviders = useAppStore((state) => state.streamingProviders);
+    const fetchStreamingProviders = useAppStore((state) => state.fetchStreamingProviders);
+    const fetchMoviesWithFilters = useAppStore((state) => state.fetchMoviesWithFilters);
 
-    const [filters, setFilters] = useState<FilterOptions>({
-        title: '',
-        releaseYear: '',
-        maturityRating: '',
-        streamingServices: [],
-        availabilityType: 'all'
-    });
+    // filter state
+    const filters = useFiltersStore(state => state.filters);
+    const currentProviderFilter = useFiltersStore(state => state.currentProviderFilter);
 
-    const [currentProviderFilter, setCurrentProviderFilter] = useState<{
-        providerIds: number[];
-        availabilityType: 'all' | 'streaming' | 'rent' | 'buy';
-    }>({
-        providerIds: [],
-        availabilityType: 'all'
-    });
+    // computed values
+    const getFilteredMovies = useFiltersStore(state => state.getFilteredMovies);
+    const filteredMovies = getFilteredMovies();
 
     useEffect(() => {
-        const loadStreamingProviders = async () => {
-            try {
-                const providers = tmdbApi.getPopularStreamingProviders();
-                setStreamingProviders(providers);
-            } catch (error) {
-                console.error('Error fetching streaming providers: ', error);
-                setStreamingProviders([]);
-            }
-        }
-
-        loadStreamingProviders();
-    }, []);
-
-    const fetchMoviesWithFilters = useCallback(async (
-        providerIds: number[] = [],
-        availabilityType: 'all' | 'streaming' | 'rent' | 'buy' = 'all'
-    )=> {
-        try {
-            setLoading(true);
-            setError(null);
-            setLoadingDetails(true);
-
-            let response: TMDBResponse<MovieWithProviders>;
-
-            if (providerIds.length > 0 && availabilityType !== 'all') {
-                const monetizationType = availabilityType === 'streaming' ? 'flatrate' : availabilityType;
-                response = await tmdbApi.getMoviesWithProviderDetails(
-                    providerIds,
-                    monetizationType
-                );
-            } else if (providerIds.length > 0) {
-                const [streamingMovies, rentMovies, buyMovies] = await Promise.all([
-                    tmdbApi.getMoviesWithProviderDetails(providerIds, 'flatrate').catch(() => ({ results: [] })),
-                    tmdbApi.getMoviesWithProviderDetails(providerIds, 'rent').catch(() => ({ results: [] })),
-                    tmdbApi.getMoviesWithProviderDetails(providerIds, 'buy').catch(() => ({ results: [] }))
-                ]);
-
-                const allMovies = [...streamingMovies.results, ...rentMovies.results, ...buyMovies.results];
-
-                const uniqueMovies = allMovies.filter((movie, index, self) =>
-                    index === self.findIndex(m => m.id === movie.id)
-                );
-
-                response = {
-                    page: 1,
-                    results: uniqueMovies.slice(0, 20),
-                    total_pages: Math.ceil(uniqueMovies.length / 20),
-                    total_results: uniqueMovies.length
-                }
-            } else {
-                const popularResponse = await tmdbApi.getPopularMovies();
-                const topMovies = popularResponse.results.slice(0, 20);
-
-                const moviesWithProviders: MovieWithProviders[] = await Promise.all(
-                    topMovies.map(async movie => {
-                        try {
-                            const details = await tmdbApi.getMovieDetails(movie.id);
-                            const certification = tmdbApi.getUSCertification(details);
-
-                            const usProviders = details['watch/providers']?.results?.US;
-                            const streamingProviders = usProviders?.flatrate || [];
-                            const rentProviders = usProviders?.rent || [];
-                            const buyProviders = usProviders?.buy || [];
-
-                            return {
-                                ...movie,
-                                certification,
-                                streamingProviders,
-                                rentProviders,
-                                buyProviders,
-                                hasStreaming: streamingProviders.length > 0,
-                            };
-                        } catch (error) {
-                            console.error(`Error fetching movie details for movie ${movie.id}:`, error);
-                            return {
-                                ...movie,
-                                certification: 'Not Rated',
-                                streamingProviders: [],
-                                rentProviders: [],
-                                buyProviders: [],
-                                hasStreaming: false
-                            };
-                        }
-                    })
-                );
-
-                response = {
-                    ...popularResponse,
-                    results: moviesWithProviders
-                };
-            }
-
-            switch (availabilityType) {
-                case 'streaming':
-                    response.results = response.results.filter(m => m.hasStreaming);
-                    break;
-                case 'rent':
-                    response.results = response.results.filter(m => m.rentProviders && m.rentProviders.length > 0);
-                    break;
-                case 'buy':
-                    response.results = response.results.filter(m => m.buyProviders && m.buyProviders.length > 0);
-                    break;
-            }
-
-            setMovies(response.results);
-        } catch (error) {
-            console.error('Error fetching movies: ', error);
-            setError('Failed to fetch movies');
-        } finally {
-            setLoading(false);
-            setLoadingDetails(false);
-        }
-    }, []);
-
-    useEffect(() => {
-       fetchMoviesWithFilters();
-    }, [fetchMoviesWithFilters]);
-
-    const handleProviderFilterChange = useCallback((
-        providerIds: number[],
-        availabilityType: 'all' | 'streaming' | 'rent' | 'buy'
-    ) => {
-        setCurrentProviderFilter({ providerIds, availabilityType });
-        fetchMoviesWithFilters(providerIds, availabilityType);
-    }, [fetchMoviesWithFilters]);
-
-    const { availableYears, availableRatings } = useMemo(() => {
-        const years = [...new Set(
-            movies
-                .map(movie => new Date(movie.release_date).getFullYear())
-                .filter(year => !isNaN(year))
-        )].sort((a, b) => b - a);
-
-        const ratings = [...new Set(
-            movies
-                .map(movie => movie.certification)
-                .filter((rating): rating is string => rating !== undefined && rating !== 'Not Rated')
-        )].sort();
-
-        return { availableYears: years, availableRatings: ratings };
-    }, [movies]);
-
-    const filteredMovies = useMemo(() => {
-        return movies.filter(movie => {
-            if (filters.title && !movie.title.toLowerCase().includes(filters.title.toLowerCase())) {
-                return false;
-            }
-
-            if (filters.releaseYear) {
-                const movieYear = new Date(movie.release_date).getFullYear();
-                if (movieYear.toString() !== filters.releaseYear) {
-                    return false;
-                }
-            }
-
-            if (filters.maturityRating && movie.certification !== filters.maturityRating) {
-                return false;
-            }
-
-            if (filters.streamingServices.length > 0) {
-                const hasSelectedProvider =
-                    movie.streamingProviders?.some(p => filters.streamingServices.includes(p.provider_id)) ||
-                    movie.rentProviders?.some(p => filters.streamingServices.includes(p.provider_id)) ||
-                    movie.buyProviders?.some(p => filters.streamingServices.includes(p.provider_id));
-
-                if (!hasSelectedProvider) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-    }, [movies, filters]);
-
-    const handleFiltersChange = (newFilters: FilterOptions) => {
-        setFilters(newFilters);
-    }
+        fetchStreamingProviders();
+        fetchMoviesWithFilters();
+    }, [fetchStreamingProviders, fetchMoviesWithFilters]);
 
     if (loading) {
         return (
@@ -247,14 +65,10 @@ const MovieGrid = () => {
 
                 <MovieFilters
                     filters={filters}
-                    onFiltersChange={handleFiltersChange}
-                    availableYears={availableYears}
-                    availableRatings={availableRatings}
                     streamingProviders={streamingProviders}
-                    onProviderFilterChange={handleProviderFilterChange}
                 />
 
-                {/* NEW: Results summary with streaming info */}
+                {/* Result summary with streaming info */}
                 <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <p className="text-gray-400 text-sm">
                         Showing {filteredMovies.length} of {movies.length} movies
@@ -265,7 +79,7 @@ const MovieGrid = () => {
                         )}
                     </p>
 
-                    {/* NEW: Quick stats */}
+                    {/* Quick stats */}
                     <div className="flex gap-4 text-sm text-gray-400">
                         <span>
                             📺 {movies.filter(m => m.hasStreaming).length} streaming
@@ -292,7 +106,7 @@ const MovieGrid = () => {
                             Try adjusting your filters to see more results
                         </div>
 
-                        {/* NEW: Suggestions based on current filters */}
+                        {/* Suggestions based on current filters */}
                         {(filters.streamingServices.length > 0 || currentProviderFilter.providerIds.length > 0) && (
                             <div className="text-gray-400 text-sm">
                                 <p>Suggestions:</p>

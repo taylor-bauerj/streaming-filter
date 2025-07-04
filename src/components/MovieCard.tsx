@@ -1,33 +1,47 @@
-import { useState } from 'react';
 import tmdbApi from '../services/tmdbApi';
-import type { Movie, MovieDetails } from '../services/tmdbApi';
+import type { Movie } from '../services/tmdbApi';
+import {useMovieDetailsStore} from "../store/useMovieDetailsStore.ts";
 
 interface MovieCardProps {
     movie: Movie;
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
-    const [isExpanded, setIsExpanded] = useState<boolean>(false);
-    const [movieDetails, setMovieDetails] = useState<MovieDetails | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+const MovieCard = ({ movie }: MovieCardProps) => {
+    // movie detail state
+    const expandedMovieId = useMovieDetailsStore(state => state.expandedMovieId);
+    const movieDetailsCache = useMovieDetailsStore(state => state.movieDetailsCache);
+    const loadingMovies = useMovieDetailsStore(state => state.loadingMovies);
+
+    // actions
+    const setExpandedMovie = useMovieDetailsStore(state => state.setExpandedMovie);
+    const setMovieDetails = useMovieDetailsStore(state => state.setMovieDetails);
+    const setLoading = useMovieDetailsStore(state => state.setLoading);
+    const closeModal = useMovieDetailsStore(state => state.closeModal);
+
+    // derived state for this movie
+    const isExpanded = expandedMovieId === movie.id;
+    const movieDetails = movieDetailsCache[movie.id] || null;
+    const loading = loadingMovies[movie.id] || false;
 
     const handleCardClick = async (): Promise<void> => {
-        setIsExpanded(true);
-        if (!movieDetails) {
-            setLoading(true);
+        setExpandedMovie(movie.id);
+
+        // Fetch details if not already cached
+        if (!movieDetails && !loading) {
+            setLoading(movie.id, true);
             try {
                 const details = await tmdbApi.getMovieDetails(movie.id);
-                setMovieDetails(details);
+                setMovieDetails(movie.id, details);
             } catch (error) {
                 console.error('Error fetching movie details:', error);
             } finally {
-                setLoading(false);
+                setLoading(movie.id, false);
             }
         }
     };
 
     const handleCloseModal = (): void => {
-        setIsExpanded(false);
+        closeModal();
     };
 
     const formatRuntime = (minutes: number | null): string => {
@@ -100,7 +114,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
                     {/* Close button */}
                     <button
                         onClick={handleCloseModal}
-                        className="absolute top-4 right-4 text-white hover:text-gray-300 z-60"
+                        className="absolute top-16 right-24 text-white hover:text-gray-300 z-60 !bg-gray-800"
                     >
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

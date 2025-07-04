@@ -1,40 +1,43 @@
-import {useState} from "react";
-import * as React from "react";
 import type {StreamingProvider} from "../services/tmdbApi.ts";
-
-export interface FilterOptions {
-    title: string;
-    releaseYear: string;
-    maturityRating: string;
-    streamingServices: number[];
-    availabilityType: 'all' | 'streaming' | 'rent' | 'buy';
-}
+import { useAppStore } from "../store/useAppStore.ts";
+import type {
+    FilterOptions
+} from "../types/models.ts";
+import {useFiltersStore} from "../store/useFiltersStore.ts";
 
 interface MovieFiltersProps {
     filters: FilterOptions;
-    onFiltersChange: (filters: FilterOptions) => void;
-    availableYears: number[];
-    availableRatings: string[];
     streamingProviders: StreamingProvider[];
-    onProviderFilterChange?: (providerIds: number[], availabilityType: 'all' | 'streaming' | 'rent' | 'buy') => void;
 }
 
-const MovieFilters: React.FC<MovieFiltersProps> = ({
+const MovieFilters = ({
     filters,
-    onFiltersChange,
-    availableYears,
-    availableRatings,
-    streamingProviders,
-    onProviderFilterChange
-}) => {
-    const [showAllProviders, setShowAllProviders] = useState<boolean>(false);
+    streamingProviders
+}: MovieFiltersProps) => {
+    // app store state
+    const getAvailableYears = useAppStore(state => state.getAvailableYears);
+    const getAvailableRatings = useAppStore(state => state.getAvailableRatings);
+    const showAllProviders = useAppStore(state => state.showAllProviders);
+    const setShowAllProviders = useAppStore(state => state.setShowAllProviders);
+
+    // filter store state
+    const setCurrentProviderFilter = useFiltersStore(state => state.setCurrentProviderFilter);
+    const clearAllFilters = useFiltersStore(state => state.clearAllFilters);
+    const setFilters = useFiltersStore(state => state.setFilters);
+
+    // computed values
+    const availableYears = getAvailableYears();
+    const availableRatings = getAvailableRatings();
 
     const handleFilterChange = (key: keyof FilterOptions, value: FilterOptions[keyof FilterOptions]) => {
         const newFilters = { ...filters, [key]: value } as FilterOptions;
-        onFiltersChange(newFilters);
+        setFilters(newFilters);
 
         if (key === 'streamingServices' || key === 'availabilityType') {
-            onProviderFilterChange?.(newFilters.streamingServices, newFilters.availabilityType);
+            setCurrentProviderFilter({
+                providerIds: newFilters.streamingServices,
+                availabilityType: newFilters.availabilityType
+            });
         }
     };
 
@@ -45,18 +48,6 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
 
         handleFilterChange('streamingServices', updatedProviders);
     }
-
-    const clearFilters = () => {
-        const clearedFilters: FilterOptions = {
-            title: '',
-            releaseYear: '',
-            maturityRating: '',
-            streamingServices: [],
-            availabilityType: 'all'
-        };
-        onFiltersChange(clearedFilters);
-        onProviderFilterChange?.([], 'all');
-    };
 
     const hasActiveFilters =
         filters.title ||
@@ -81,7 +72,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                 <h2 className="text-2xl font-semibold text-white">Filters</h2>
                 {hasActiveFilters && (
                     <button
-                        onClick={clearFilters}
+                        onClick={clearAllFilters}
                         className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
                     >
                         Clear All
@@ -175,7 +166,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                     </div>
                 </div>
 
-                {/* NEW: Streaming Services Filter */}
+                {/* Streaming Services Filter */}
                 <div>
                     <div className="flex items-center justify-between mb-3">
                         <label className="block text-sm font-medium text-gray-300">
@@ -184,7 +175,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                         {streamingProviders?.length > 8 && (
                             <button
                                 onClick={() => setShowAllProviders(!showAllProviders)}
-                                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                                className="text-sm text-gray-300 hover:!bg-gray-600 border border-gray-600 transition-colors !bg-blue-500"
                             >
                                 {showAllProviders ? 'Show Less' : `Show All (${streamingProviders.length})`}
                             </button>
@@ -245,7 +236,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                                 Title: "{filters.title}"
                                 <button
                                     onClick={() => handleFilterChange('title', '')}
-                                    className="ml-2 hover:text-gray-300"
+                                    className="ml-2 hover:text-gray-300 !bg-gray-600"
                                 >
                                     ×
                                 </button>
@@ -257,7 +248,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                                 Year: {filters.releaseYear}
                                 <button
                                     onClick={() => handleFilterChange('releaseYear', '')}
-                                    className="ml-2 hover:text-gray-300"
+                                    className="ml-2 hover:text-gray-300 !bg-gray-600"
                                 >
                                     ×
                                 </button>
@@ -269,7 +260,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                                 Rating: {filters.maturityRating}
                                 <button
                                     onClick={() => handleFilterChange('maturityRating', '')}
-                                    className="ml-2 hover:text-gray-300"
+                                    className="ml-2 hover:text-gray-300 !bg-gray-600"
                                 >
                                     ×
                                 </button>
@@ -281,7 +272,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                                 Type: {filters.availabilityType}
                                 <button
                                     onClick={() => handleFilterChange('availabilityType', 'all')}
-                                    className="ml-2 hover:text-gray-300"
+                                    className="ml-2 hover:text-gray-300 !bg-gray-600"
                                 >
                                     ×
                                 </button>
@@ -296,7 +287,7 @@ const MovieFilters: React.FC<MovieFiltersProps> = ({
                                         const provider = streamingProviders.find(p => p.name === providerName);
                                         if (provider) handleProviderToggle(provider.id);
                                     }}
-                                    className="ml-2 hover:text-gray-300"
+                                    className="ml-2 hover:text-gray-300 !bg-gray-600"
                                 >
                                     ×
                                 </button>
