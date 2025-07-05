@@ -1,4 +1,4 @@
-import {useFiltersStore} from "../../store";
+import {useFiltersStore} from "@/store";
 
 const ClearFilters = () => {
     const hasActiveFilters = useFiltersStore(state => state.hasActiveFilters);

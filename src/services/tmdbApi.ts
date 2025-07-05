@@ -6,7 +6,7 @@ import type {
     MovieWithProviders, Provider,
     StreamingProvider,
     TMDBResponse
-} from "../types/models.ts";
+} from "@/types/models.ts";
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = import.meta.env.VITE_TMDB_BASE_URL;

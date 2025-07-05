@@ -1,4 +1,4 @@
-import { useFiltersStore } from "../../store";
+import { useFiltersStore } from "@/store";
 
 const AvailabilityTypeFilter = () => {
     const filters = useFiltersStore(state => state.filters);

@@ -1,6 +1,6 @@
-import tmdbApi from '../services/tmdbApi';
-import type { Movie } from "../types/models.ts";
-import { useMovieDetailsStore } from "../store";
+import tmdbApi from '@/services/tmdbApi';
+import type { Movie } from "@/types/models.ts";
+import { useMovieDetailsStore } from "@/store";
 
 interface MovieCardProps {
     movie: Movie;

@@ -1,7 +1,7 @@
 import {
     useAppStore,
     useFiltersStore
-} from "../../store";
+} from "@/store";
 
 const MaturityRatingFilter = () => {
     const filters = useFiltersStore(state => state.filters);

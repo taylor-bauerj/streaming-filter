@@ -1,10 +1,11 @@
 import TitleFilter from './TitleFilter';
-import ReleaseYearFilter from "./ReleaseYearFilter.tsx";
-import MaturityRatingFilter from "./MaturityRatingFilter.tsx";
-import AvailabilityTypeFilter from "./AvailabilityTypeFilter.tsx";
-import StreamingServicesFilter from "./StreamingServicesFilter.tsx";
-import ActiveFilters from "./ActiveFilters.tsx";
-import ClearFilters from "./ClearFilters.tsx";
+import ReleaseYearFilter from "./ReleaseYearFilter";
+import MaturityRatingFilter from "./MaturityRatingFilter";
+import AvailabilityTypeFilter from "./AvailabilityTypeFilter";
+import StreamingServicesFilter from "./StreamingServicesFilter";
+import ActiveFilters from "./ActiveFilters";
+import ClearFilters from "./ClearFilters";
+import MovieFilters from "./MovieFilters";
 
 // export all filters
 export {
@@ -14,5 +15,6 @@ export {
     AvailabilityTypeFilter,
     StreamingServicesFilter,
     ActiveFilters,
-    ClearFilters
+    ClearFilters,
+    MovieFilters
 };

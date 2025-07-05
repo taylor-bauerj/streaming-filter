@@ -1,11 +1,12 @@
+import tmdbApi from "@/services/tmdbApi.ts";
+import type {
+    MovieWithProviders,
+    StreamingProvider,
+    TMDBResponse,
+    AvailabilityType
+} from "@/types/models.ts";
 import { create } from 'zustand'
-import tmdbApi from "../services/tmdbApi.ts";
-import {
-    type MovieWithProviders,
-    type StreamingProvider, type TMDBResponse
-} from "../types/models.ts";
 import { devtools } from "zustand/middleware";
-import type {AvailabilityType} from "../types/models.ts";
 
 interface AppState {
     // State

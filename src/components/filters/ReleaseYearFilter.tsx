@@ -1,4 +1,4 @@
-import { useAppStore, useFiltersStore } from "../../store";
+import { useAppStore, useFiltersStore } from "@/store";
 
 const ReleaseYearFilter = () => {
     const filters = useFiltersStore(state => state.filters);

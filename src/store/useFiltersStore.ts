@@ -1,8 +1,11 @@
+import type {
+    AvailabilityType,
+    FilterOptions,
+    MovieWithProviders
+} from "@/types/models.ts";
+import { useAppStore } from "./useAppStore.ts";
 import { create } from 'zustand'
 import { devtools } from "zustand/middleware";
-import type { AvailabilityType, FilterOptions } from "../types/models.ts";
-import type { MovieWithProviders } from "../types/models.ts";
-import { useAppStore } from "./useAppStore.ts";
 
 export interface ProviderFilter {
     providerIds: number[];

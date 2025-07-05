@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import MovieCard from "./MovieCard.tsx";
-import MovieFilters from "./filters/MovieFilters.tsx";
-import { useAppStore, useFiltersStore } from "../store";
+import { MovieFilters } from "./filters";
+import { useAppStore, useFiltersStore } from "@/store";
 
 const MovieGrid = () => {
     // app state

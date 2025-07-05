@@ -6,7 +6,7 @@ import {
     StreamingServicesFilter,
     ActiveFilters,
     ClearFilters
-} from "./index.ts";
+} from "./index";
 
 const MovieFilters = () => {
     return (

@@ -1,4 +1,4 @@
-import type { MovieDetails } from "../types/models.ts";
+import type { MovieDetails } from "@/types/models.ts";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
