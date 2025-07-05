@@ -1,8 +1,9 @@
 import { create } from 'zustand'
-import tmdbApi, {
+import tmdbApi from "../services/tmdbApi.ts";
+import {
     type MovieWithProviders,
     type StreamingProvider, type TMDBResponse
-} from "../services/tmdbApi.ts";
+} from "../types/models.ts";
 import { devtools } from "zustand/middleware";
 import type {AvailabilityType} from "../types/models.ts";
 

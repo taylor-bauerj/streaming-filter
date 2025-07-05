@@ -1,18 +1,16 @@
 import { useEffect } from "react";
 import MovieCard from "./MovieCard.tsx";
-import MovieFilters from "./MovieFilters.tsx";
-import { useAppStore } from "../store/useAppStore.ts";
-import {useFiltersStore} from "../store/useFiltersStore.ts";
+import MovieFilters from "./filters/MovieFilters.tsx";
+import { useAppStore, useFiltersStore } from "../store";
 
 const MovieGrid = () => {
     // app state
-    const movies = useAppStore((state) => state.movies);
-    const loading = useAppStore((state) => state.loading);
-    const error = useAppStore((state) => state.error);
-    const loadingDetails = useAppStore((state) => state.loadingDetails);
-    const streamingProviders = useAppStore((state) => state.streamingProviders);
-    const fetchStreamingProviders = useAppStore((state) => state.fetchStreamingProviders);
-    const fetchMoviesWithFilters = useAppStore((state) => state.fetchMoviesWithFilters);
+    const movies = useAppStore(state => state.movies);
+    const loading = useAppStore(state => state.loading);
+    const error = useAppStore(state => state.error);
+    const loadingDetails = useAppStore(state => state.loadingDetails);
+    const fetchStreamingProviders = useAppStore(state => state.fetchStreamingProviders);
+    const fetchMoviesWithFilters = useAppStore(state => state.fetchMoviesWithFilters);
 
     // filter state
     const filters = useFiltersStore(state => state.filters);
@@ -63,10 +61,7 @@ const MovieGrid = () => {
                     Movies & Streaming
                 </h1>
 
-                <MovieFilters
-                    filters={filters}
-                    streamingProviders={streamingProviders}
-                />
+                <MovieFilters />
 
                 {/* Result summary with streaming info */}
                 <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

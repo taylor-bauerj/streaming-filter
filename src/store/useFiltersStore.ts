@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import {devtools} from "zustand/middleware";
-import type {AvailabilityType, FilterOptions} from "../types/models.ts";
-import type {MovieWithProviders} from "../services/tmdbApi.ts";
+import { devtools } from "zustand/middleware";
+import type { AvailabilityType, FilterOptions } from "../types/models.ts";
+import type { MovieWithProviders } from "../types/models.ts";
 import { useAppStore } from "./useAppStore.ts";
 
 export interface ProviderFilter {
@@ -18,6 +18,9 @@ interface FiltersState {
     setFilters: (filters: FilterOptions) => void;
     setCurrentProviderFilter: (providerFilter: ProviderFilter) => void;
     clearAllFilters: () => void;
+    handleFilterChange: (key: keyof FilterOptions, value: FilterOptions[keyof FilterOptions]) => void;
+    handleProviderToggle: (providerId: number) => void;
+    hasActiveFilters: () => boolean;
 
     // computed values
     getFilteredMovies: () => MovieWithProviders[];
@@ -62,6 +65,40 @@ export const useFiltersStore = create<FiltersState>()(
 
                 const { fetchMoviesWithFilters } = useAppStore.getState();
                 fetchMoviesWithFilters([], 'all');
+            },
+
+            handleFilterChange: (key: keyof FilterOptions, value: FilterOptions[keyof FilterOptions]) => {
+                const { filters, setFilters, setCurrentProviderFilter } = get();
+                const newFilters = { ...filters, [key]: value } as FilterOptions;
+                setFilters(newFilters);
+
+                if (key === 'streamingServices' || key === 'availabilityType') {
+                    setCurrentProviderFilter({
+                        providerIds: newFilters.streamingServices,
+                        availabilityType: newFilters.availabilityType
+                    });
+                }
+            },
+
+            handleProviderToggle: (providerId: number) => {
+                const { filters, handleFilterChange } = get();
+                const updatedProviders = filters.streamingServices.includes(providerId)
+                    ? filters.streamingServices.filter(id => id !== providerId)
+                    : [...filters.streamingServices, providerId];
+
+                handleFilterChange('streamingServices', updatedProviders);
+            },
+
+            hasActiveFilters: () => {
+                const { filters } = get();
+
+                return (
+                    filters.title ||
+                    filters.releaseYear ||
+                    filters.maturityRating ||
+                    filters.streamingServices.length > 0 ||
+                    filters.availabilityType !== 'all'
+                );
             },
 
             getFilteredMovies: () => {

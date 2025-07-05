@@ -1,6 +1,6 @@
-import type {MovieDetails} from "../services/tmdbApi.ts";
-import {create} from "zustand";
-import {devtools} from "zustand/middleware";
+import type { MovieDetails } from "../types/models.ts";
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
 interface MovieDetailsState {
     // state
