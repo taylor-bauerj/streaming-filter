@@ -1,12 +1,17 @@
 import tmdbApi from '@/services/tmdbApi';
 import type { Movie } from "@/types/models.ts";
-import { useMovieDetailsStore } from "@/store";
+import { useMovieDetailsStore, useAppStore } from "@/store";
+import ParentalGuideDisplay from "@/components/ParentalGuideDisplay.tsx";
+import placeholderImage from '@/assets/placeholder.png';
 
 interface MovieCardProps {
     movie: Movie;
 }
 
 const MovieCard = ({ movie }: MovieCardProps) => {
+    // parental guide state
+    const parentalGuides = useAppStore(state => state.parentalGuides);
+
     // movie detail state
     const expandedMovieId = useMovieDetailsStore(state => state.expandedMovieId);
     const movieDetailsCache = useMovieDetailsStore(state => state.movieDetailsCache);
@@ -22,6 +27,7 @@ const MovieCard = ({ movie }: MovieCardProps) => {
     const isExpanded = expandedMovieId === movie.id;
     const movieDetails = movieDetailsCache[movie.id] || null;
     const loading = loadingMovies[movie.id] || false;
+    const parentalGuide = parentalGuides[movie.id] || null;
 
     const handleCardClick = async (): Promise<void> => {
         setExpandedMovie(movie.id);
@@ -89,7 +95,7 @@ const MovieCard = ({ movie }: MovieCardProps) => {
                         ⭐ {formatRating(movie.vote_average)}
                     </div>
 
-                    {/*Maturity Rating*/}
+                    {/* Maturity Rating */}
                     <div className={`absolute top-2 left-2 ${getRatingColor(movie.certification)} text-white px-2 py-1 rounded text-xs font-bold`}>
                         {movie.certification}
                     </div>
@@ -166,9 +172,9 @@ const MovieCard = ({ movie }: MovieCardProps) => {
                                                 <span>{formatRuntime(movieDetails.runtime)}</span>
                                                 <span>•</span>
                                                 <div className="flex items-center space-x-2">
-                      <span className="bg-yellow-500 text-black px-3 py-1 rounded-full font-bold">
-                        ⭐ {formatRating(movieDetails.vote_average)}
-                      </span>
+                                                <span className="bg-yellow-500 text-black px-3 py-1 rounded-full font-bold">
+                                                    ⭐ {formatRating(movieDetails.vote_average)}
+                                                </span>
                                                     <span className="text-gray-400">({movieDetails.vote_count} votes)</span>
                                                 </div>
                                             </div>
@@ -180,8 +186,8 @@ const MovieCard = ({ movie }: MovieCardProps) => {
                                                         key={genre.id}
                                                         className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium"
                                                     >
-                        {genre.name}
-                      </span>
+                                                    {genre.name}
+                                                </span>
                                                 ))}
                                             </div>
 
@@ -196,17 +202,15 @@ const MovieCard = ({ movie }: MovieCardProps) => {
                                             {/* Cast */}
                                             {movieDetails.credits?.cast && (
                                                 <div>
-                                                    <h3 className="text-2xl font-semibold mb-3">Cast</h3>
+                                                    <h3 className="text-2xl font-semibold mb-3">Top Cast</h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                         {movieDetails.credits.cast.slice(0, 8).map((actor) => (
                                                             <div key={actor.id} className="flex items-center space-x-3">
-                                                                {actor.profile_path && (
-                                                                    <img
-                                                                        src={tmdbApi.getImageUrl(actor.profile_path, 'w45') || '/api/placeholder/45/65'}
-                                                                        alt={actor.name}
-                                                                        className="w-12 h-12 rounded-full object-cover"
-                                                                    />
-                                                                )}
+                                                                <img
+                                                                src={actor.profile_path ? tmdbApi.getImageUrl(actor.profile_path, 'w45') : placeholderImage}
+                                                                alt={actor.name}
+                                                                className="w-12 h-12 rounded-full object-cover"
+                                                                />
                                                                 <div>
                                                                     <div className="font-medium">{actor.name}</div>
                                                                     <div className="text-gray-400 text-sm">{actor.character}</div>
@@ -275,6 +279,16 @@ const MovieCard = ({ movie }: MovieCardProps) => {
                                                                 </div>
                                                             </div>
                                                         )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/*Parental Guide*/}
+                                            {parentalGuide && (
+                                                <div>
+                                                    <h3 className="text-2xl font-semibold mb-3">Content Guide</h3>
+                                                    <div className="pt-0">
+                                                        <ParentalGuideDisplay guide={parentalGuide} />
                                                     </div>
                                                 </div>
                                             )}

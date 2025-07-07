@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import MovieCard from "./MovieCard.tsx";
 import { MovieFilters } from "./filters";
 import { useAppStore, useFiltersStore } from "@/store";
+import { ParentalGuideApi } from "@/services/parentalGuideApi.ts";
 
 const MovieGrid = () => {
     // app state
@@ -11,6 +12,11 @@ const MovieGrid = () => {
     const loadingDetails = useAppStore(state => state.loadingDetails);
     const fetchStreamingProviders = useAppStore(state => state.fetchStreamingProviders);
     const fetchMoviesWithFilters = useAppStore(state => state.fetchMoviesWithFilters);
+    const contentFilters = useAppStore(state => state.contentFilters);
+    const contentFilteringEnabled = useAppStore(state => state.contentFilteringEnabled);
+    const parentalGuides = useAppStore(state => state.parentalGuides);
+    const fetchParentalGuides = useAppStore(state => state.fetchParentalGuides);
+    const checkParentalGuideApi = useAppStore(state => state.checkParentalGuideApi);
 
     // filter state
     const filters = useFiltersStore(state => state.filters);
@@ -20,10 +26,28 @@ const MovieGrid = () => {
     const getFilteredMovies = useFiltersStore(state => state.getFilteredMovies);
     const filteredMovies = getFilteredMovies();
 
+    const contentFilteredMovies = useMemo(() => {
+        if (!contentFilteringEnabled) return filteredMovies;
+
+        return filteredMovies.filter(movie => {
+            const guide = parentalGuides[movie.id];
+            if (!guide) return true;
+
+            return ParentalGuideApi.moviePassesFilters(guide, contentFilters);
+        });
+    }, [filteredMovies, contentFilteringEnabled, contentFilters, parentalGuides]);
+
     useEffect(() => {
         fetchStreamingProviders();
         fetchMoviesWithFilters();
-    }, [fetchStreamingProviders, fetchMoviesWithFilters]);
+        checkParentalGuideApi();
+    }, [fetchStreamingProviders, fetchMoviesWithFilters, checkParentalGuideApi]);
+
+    useEffect(() => {
+        if (movies.length > 0 && contentFilteringEnabled) {
+            fetchParentalGuides(movies);
+        }
+    }, [movies, contentFilteringEnabled, fetchParentalGuides]);
 
     if (loading) {
         return (
@@ -66,10 +90,10 @@ const MovieGrid = () => {
                 {/* Result summary with streaming info */}
                 <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <p className="text-gray-400 text-sm">
-                        Showing {filteredMovies.length} of {movies.length} movies
-                        {currentProviderFilter.providerIds.length > 0 && (
+                        Showing {contentFilteredMovies.length} of {movies.length} movies
+                        {contentFilteringEnabled && (
                             <span className="ml-2 text-blue-400">
-                                • Filtered by {currentProviderFilter.providerIds.length} streaming service{currentProviderFilter.providerIds.length !== 1 ? 's' : ''}
+                                • Content filtered
                             </span>
                         )}
                     </p>
@@ -88,9 +112,9 @@ const MovieGrid = () => {
                     </div>
                 </div>
 
-                {filteredMovies.length > 0 ? (
+                {contentFilteredMovies.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                        {filteredMovies.map((movie) => (
+                        {contentFilteredMovies.map((movie) => (
                             <MovieCard movie={movie} key={movie.id} />
                         ))}
                     </div>

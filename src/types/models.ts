@@ -1,3 +1,5 @@
+import type { IMDBParentalGuide, ContentFilter } from './parental-guide';
+
 export type AvailabilityType = 'all' | 'streaming' | 'rent' | 'buy';
 
 export interface FilterOptions {
@@ -6,6 +8,8 @@ export interface FilterOptions {
     maturityRating: string;
     streamingServices: number[];
     availabilityType: AvailabilityType;
+    contentFilter?: ContentFilter;
+    enableContentFiltering: boolean;
 }
 
 export interface Movie {
@@ -140,6 +144,8 @@ export interface MovieWithProviders extends Movie {
     rentProviders?: Provider[];
     buyProviders?: Provider[];
     hasStreaming?: boolean;
+    parentalGuide?: IMDBParentalGuide;
+    imdbId?: string;
 }
 
 export interface StreamingProvider {

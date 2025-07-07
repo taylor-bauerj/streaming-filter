@@ -11,6 +11,13 @@ export default defineConfig({
     ],
     server: {
       port: 3000,
+      watch: {
+        ignored: [
+            '**/backend/**',
+            '**/backend/data/**',
+            '**/backend/data/parental-guides.json'
+        ]
+      }
     },
     resolve: {
       alias: {

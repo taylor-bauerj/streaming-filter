@@ -5,7 +5,8 @@ import {
     AvailabilityTypeFilter,
     StreamingServicesFilter,
     ActiveFilters,
-    ClearFilters
+    ClearFilters,
+    ContentFilters
 } from "./index";
 
 const MovieFilters = () => {
@@ -20,6 +21,7 @@ const MovieFilters = () => {
                 </div>
                 <AvailabilityTypeFilter />
                 <StreamingServicesFilter />
+                <ContentFilters />
             </div>
             <ActiveFilters />
         </div>

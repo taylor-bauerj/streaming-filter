@@ -7,6 +7,8 @@ import type {
 } from "@/types/models.ts";
 import { create } from 'zustand'
 import { devtools } from "zustand/middleware";
+import {CONTENT_FILTER_PRESETS, type ContentFilter, type IMDBParentalGuide} from "@/types/parental-guide.ts";
+import parentalGuideApi from "@/services/parentalGuideApi.ts";
 
 interface AppState {
     // State
@@ -16,6 +18,10 @@ interface AppState {
     loadingDetails: boolean;
     streamingProviders: StreamingProvider[];
     showAllProviders: boolean;
+    parentalGuides: { [tmdbId: number]: IMDBParentalGuide | null };
+    contentFilters: ContentFilter;
+    contentFilteringEnabled: boolean;
+    parentalGuideApiHealthy: boolean;
 
     // Actions
     setMovies: (movies: MovieWithProviders[]) => void;
@@ -24,6 +30,10 @@ interface AppState {
     setLoadingDetails: (loading: boolean) => void;
     setStreamingProviders: (providers: StreamingProvider[]) => void;
     setShowAllProviders: (showAllProviders: boolean) => void;
+    setContentFilters: (filters: ContentFilter) => void;
+    setContentFilteringEnabled: (enabled: boolean) => void;
+    fetchParentalGuides: (movies: MovieWithProviders[]) => void;
+    checkParentalGuideApi: () => void;
 
     // Async actions
     fetchStreamingProviders: () => void;
@@ -48,6 +58,10 @@ export const useAppStore = create<AppState>()(
             loadingDetails: false,
             streamingProviders: [],
             showAllProviders: false,
+            parentalGuides: {},
+            contentFilters: CONTENT_FILTER_PRESETS.any,
+            contentFilteringEnabled: false,
+            parentalGuideApiHealthy: false,
 
             // update state actions
             setMovies: (movies: MovieWithProviders[]) => set({ movies }),
@@ -56,6 +70,8 @@ export const useAppStore = create<AppState>()(
             setLoadingDetails: (loading: boolean) => set({ loadingDetails: loading }),
             setStreamingProviders: (providers: StreamingProvider[]) => set({ streamingProviders: providers }),
             setShowAllProviders: (showAllProviders: boolean) => set({ showAllProviders }),
+            setContentFilters: (filters: ContentFilter) => set({ contentFilters: filters }),
+            setContentFilteringEnabled: (enabled: boolean) => set({ contentFilteringEnabled: enabled }),
 
             fetchStreamingProviders: async () => {
                 try {
@@ -163,6 +179,21 @@ export const useAppStore = create<AppState>()(
                 } finally {
                     set({ loading: false, loadingDetails: false });
                 }
+            },
+
+            fetchParentalGuides: async (movies: MovieWithProviders[]) => {
+                try {
+                    const guides = await parentalGuideApi.getParentalGuidesForMovies(movies);
+                    set({ parentalGuides: guides });
+                } catch (error) {
+                    console.error('Error fetching parental guides: ', error);
+                    set({ parentalGuides: {} });
+                }
+            },
+
+            checkParentalGuideApi: async () => {
+                const healthy = await parentalGuideApi.healthCheck();
+                set({ parentalGuideApiHealthy: healthy });
             },
 
             getAvailableYears: () => {

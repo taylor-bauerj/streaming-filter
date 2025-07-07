@@ -99,8 +99,8 @@ class TMDBApi {
         }
     }
 
-    getImageUrl(path: string | null, size: string ='w500'): string | null {
-        if (!path) return null;
+    getImageUrl(path: string | null, size: string ='w500'): string | undefined {
+        if (!path) return undefined;
 
         return `${IMAGE_BASE_URL}${size}${path}`;
     }
